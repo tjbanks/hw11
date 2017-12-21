@@ -365,8 +365,8 @@ def main():
     future_element = 20
     epochs = 10
     
-    #tt, model = generate_CNN(dataset, train_size, look_back, future_element)
-    tt, model = generate_DNN(dataset, train_size, look_back, future_element)
+    tt, model = generate_CNN(dataset, train_size, look_back, future_element)
+    #tt, model = generate_DNN(dataset, train_size, look_back, future_element)
     #tt, model = generate_RNN(dataset, train_size, look_back) #Simply predicts next element from past 20 elements, incapable of multichannel input!
 
     model_info = "Past elements considered: %d | Future element predicted: %d | Epochs: %d" % (look_back,future_element, epochs)
