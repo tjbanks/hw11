@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
 from keras.layers import Flatten
 from keras.layers import Dropout
 from keras.layers import LSTM
@@ -216,7 +217,7 @@ def series_to_supervised_CNNData(data, n_in=1, n_out=1, dropnan=True):
 #initialCNN
 def cnn_model(train_X):
     print "CNN Input data shape: ", train_X.shape
-    n_filters = 10
+    n_filters = 50
     filter_width = 10
     filter_height = 1
     
@@ -225,6 +226,7 @@ def cnn_model(train_X):
     model.add(Conv2D(n_filters, (filter_width, filter_height),
                      padding="same", activation="relu", kernel_initializer="normal",
                      input_shape=(train_X.shape[1],train_X.shape[2], train_X.shape[3])))
+    model.add(MaxPooling2D(pool_size=(1,4)))
     model.add(Flatten())
     model.add(Dropout(.2))
     #model.add(Dense(300, kernel_initializer='normal', activation='relu'))
@@ -266,6 +268,9 @@ class TrainTest:
         self.testY = teY
 
 def generate_CNN(data, train_size, look_back, future_element):
+    binaryClassification = False
+    thresh = 0.6
+
     time_elements, channels = data.shape
     out = series_to_supervised_CNNData(data, n_in=look_back, n_out=future_element, dropnan=True)
     #Data in format [Time][Band], var1(t-100)  var2(t-100)...var1(t-99)...varn(t+19)
@@ -295,8 +300,15 @@ def generate_CNN(data, train_size, look_back, future_element):
     temp = []
     np.apply_along_axis(myfunc, axis=1, arr=testX )
     testX = np.array(temp);
-    
+
+    if binaryClassification:
+        trainY[trainY >= thresh] = 1
+        trainY[trainY < thresh] = 0
+        testY[testY >= thresh] = 1
+        testY[testY < thresh] = 0
+
     model = cnn_model(trainX)
+
     tt = TrainTest(trainX, trainY, testX, testY)
     return tt, model
 
@@ -330,6 +342,16 @@ def generate_RNN(data, train_size, look_back):
     # reshape into X=t and Y=t+1
     
     trainX, trainY = create_dataset(train, look_back)
+    return tt, model
+
+def generate_RNN(data, train_size, look_back):
+    #outx, outy = create_dataset(data, look_back)
+    model = rnn_model(look_back)
+    
+    train, test = data[0:train_size,:], data[train_size:len(data),:]
+    # reshape into X=t and Y=t+1
+    
+    trainX, trainY = create_dataset(train, look_back)
     testX, testY = create_dataset(test, look_back)
     
     # reshape input to be [samples, time steps, features]
@@ -342,7 +364,7 @@ def generate_RNN(data, train_size, look_back):
 
 def main():
     #load file
-    x = load_file_elements(matfile, n_start, n_end, matvarname=matvar, plot=True)
+    x = load_file_elements(matfile, n_start, n_end, matvarname=matvar, plot=False)
     #x, scaler = to_numpy_scaled_1D(x, plot=True)#Testing
     #plot_signal(x, n_per_second, signame="Noisy Signal", newPlot=True)
     
@@ -358,12 +380,12 @@ def main():
     #Data in format [Band][Time]
     
     #To Numpy Array for processing
-    dataset, scaler = to_numpy_scaled(bandSets, plot=True)    
+    dataset, scaler = to_numpy_scaled(bandSets, plot=False)    
 
     train_size = int(len(dataset) * 0.67)
     look_back = 300
     future_element = 20
-    epochs = 10
+    epochs = 5
     
     tt, model = generate_CNN(dataset, train_size, look_back, future_element)
     #tt, model = generate_DNN(dataset, train_size, look_back, future_element)
@@ -409,19 +431,9 @@ def main():
     trainPredictPlot = np.empty_like(x)
     trainPredictPlot[:] = np.nan
     trainPredictPlot[look_back:len(trainPredict)+look_back] = np.array(trainPredict).flatten()
-#    # shift test predictions for plotting
-    testPredictPlot = np.empty_like(x)
-    testPredictPlot[:] = np.nan
-    #testPredictPlot[len(trainPredict)+((look_back)*2)+1:len(x)-1] = np.array(testPredict).flatten()
-    testPredictPlot[-len(testPredict):] = np.array(testPredict).flatten()
-#    # plot baseline and predictions
-    plt.figure(figsize=(plot_size_x,plot_size_y))
-    plt.clf()
-    plt.plot(np.transpose(dataset)[-1,:], label="Original Signal")
-    plt.plot(trainPredictPlot, label="Predicted Train Signal")
-    plt.plot(testPredictPlot, label="Predicted Test Signal")
-    plt.legend()
-    plt.show()
+#    plt.plot(testPredictPlot, label="Predicted Test Signal")
+#    plt.legend()
+#    plt.show()
     
     return
 
