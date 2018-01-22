@@ -17,6 +17,7 @@ import pandas as pd
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 
+import keras
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Conv2D
@@ -216,12 +217,12 @@ def series_to_supervised_CNNData(data, n_in=1, n_out=1, dropnan=True):
 
 #initialCNN
 def cnn_model(train_X):
-    print "CNN Input data shape: ", train_X.shape
+    print("CNN Input data shape: ", train_X.shape)
     n_filters = 50
     filter_width = 10
     filter_height = 1
     
-    print "Convolutional NN: %d filters (%d x %d)" % (n_filters, filter_height, filter_width)
+    print("Convolutional NN: %d filters (%d x %d)" % (n_filters, filter_height, filter_width))
     model = Sequential()    
     model.add(Conv2D(n_filters, (filter_width, filter_height),
                      padding="same", activation="relu", kernel_initializer="normal",
@@ -393,13 +394,13 @@ def main():
 
     model_info = "Past elements considered: %d | Future element predicted: %d | Epochs: %d" % (look_back,future_element, epochs)
         
-    print model_info
-    print "Bands: ", bands
+    print(model_info)
+    print("Bands: ", bands)
     
-    print "tt.trainX.shape:", tt.trainX.shape
-    print "tt.trainY.shape:", tt.trainY.shape
-    print "tt.testX.shape:", tt.testX.shape
-    print "tt.testY.shape:", tt.testY.shape
+    print("tt.trainX.shape:", tt.trainX.shape)
+    print("tt.trainY.shape:", tt.trainY.shape)
+    print("tt.testX.shape:", tt.testX.shape)
+    print("tt.testY.shape:", tt.testY.shape)
     model.fit(tt.trainX, tt.trainY, epochs=epochs, batch_size=1, verbose=2)
     
     
@@ -407,15 +408,15 @@ def main():
     trainPredict = model.predict(tt.trainX)
     testPredict = model.predict(tt.testX)
     
-    print "trainPredict: "
-    print np.array(trainPredict).flatten()
-    print "trainActual: "
-    print tt.trainY
+    print("trainPredict: ")
+    print(np.array(trainPredict).flatten())
+    print("trainActual: ")
+    print(tt.trainY)
     
-    print "testPredict: "
-    print np.array(testPredict).flatten()
-    print "testActual: "
-    print tt.testY
+    print("testPredict: ")
+    print(np.array(testPredict).flatten())
+    print("testActual: ")
+    print(tt.testY)
     
     # invert predictions
 #    trainPredict = scaler.inverse_transform(trainPredict)
