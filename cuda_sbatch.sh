@@ -1,4 +1,4 @@
-BATCH CONFIG
+#!/bin/bash
 #-------------------------------------------------------------------------------
 ## resources
 #SBATCH -p gpu3  # partition (which set of nodes to run on)
@@ -18,7 +18,7 @@ BATCH CONFIG
 #SBATCH --mail-user=tbg28@mail.missouri.edu  # email address for notifications
 #SBATCH --mail-type=END,FAIL  # which type of notifications to send
 #
-#-------------------------------------------------------------------------------
+##-------------------------------------------------------------------------------
 
 echo "### Starting at: $(date) ###"
 
