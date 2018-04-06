@@ -228,6 +228,7 @@ def cnn_model(train_X):
                      padding="same", activation="relu", kernel_initializer="normal",
                      input_shape=(train_X.shape[1],train_X.shape[2], train_X.shape[3])))
     model.add(MaxPooling2D(pool_size=(1,4)))
+    #model.add(LSTM(200))
     model.add(Flatten())
     model.add(Dropout(.2))
     #model.add(Dense(300, kernel_initializer='normal', activation='relu'))
