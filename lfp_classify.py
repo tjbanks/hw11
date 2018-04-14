@@ -127,10 +127,11 @@ def rnn_model(train_X):
 def run_model(filename, run_model, threshold):   
     rand_state = 42 #For reproducability        
     do_kfold = False 
-
+    epochs = 40
+    
     (features, labels, scX, scY) = load_mat(filename, run_model)
     
-    estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=1, batch_size=batch_size,verbose=1)
+    estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=epochs, batch_size=batch_size,verbose=1)
     kfold = KFold(n_splits=6, shuffle=True, random_state=rand_state)
     if do_kfold:
         results = cross_val_score(estimator, features, labels, scoring='accuracy',cv=kfold)
@@ -147,9 +148,9 @@ def run_model(filename, run_model, threshold):
     return results
 
 def main():
-    filename = "train_sub3.mat"
+    filename = "train_sub2.mat"
     thresh = .68
-    selected_model = rnn_model
+    selected_model = cnn_model
     
     results = run_model(filename, selected_model, thresh)
     
