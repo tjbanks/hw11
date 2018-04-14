@@ -167,7 +167,7 @@ def rnn_model(train_X):
     
 def run_model(run_model, features, labels, threshold,split_kfold=6):   
     rand_state = 42 #For reproducability        
-    estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=1, batch_size=5, verbose=1)
+    estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=10, batch_size=5, verbose=1)
     kfold = KFold(n_splits=split_kfold, shuffle=True, random_state=rand_state)
     results = cross_val_score(estimator, features, labels, cv=kfold)
     return results
