@@ -6,7 +6,7 @@ Created on Thu Apr  5 22:39:28 2018
 @author: Tyler Banks
 https://github.com/keras-team/keras/issues/401
 """
-
+import math
 import numpy as np
 import pandas as pd
 import scipy.io as sio
@@ -18,7 +18,8 @@ from keras.layers import Flatten
 from keras.layers import Dropout
 from keras.layers import LSTM
 from keras.layers import Activation
-
+from keras.models import model_from_json
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import KFold
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
@@ -77,12 +78,31 @@ def load_csv(filename, selected_model, lookback_elements, future_element,stride=
     np.apply_along_axis(myfunc, axis=1, arr=features )
     features = np.array(temp);
     #Now shaped to be (72000, 1, 50, 1)
+    (samples, channels, look_back, nil) = features.shape
+    
+    features = features.reshape(samples, channels*look_back)
+    labels = labels.reshape(labels.shape[0],1)
+    
+    #Scaling done here
+    scX = MinMaxScaler()
+    features = scX.fit_transform(features)
+    scY = MinMaxScaler()
+    labels = scY.fit_transform(labels)
+    #
+    temp=[]
+    np.apply_along_axis(myfunc, axis=1, arr=features )
+    features = np.array(temp);
+    
+    labels = labels.reshape(labels.shape[0])
+    
     
     (samples, channels, look_back, nil) = features.shape
     if selected_model is dnn_model:
         features = features.reshape(samples, channels*look_back)
     if selected_model is rnn_model:
         features = features.reshape(samples, channels, look_back)
+    
+    
     
     return features,labels
     
@@ -123,10 +143,29 @@ def series_to_supervised_Data(data, n_in=1, n_out=1, dropnan=True):
 
     return reframed
 
+def save_model(filename_prefix, model):
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(filename_prefix+".json", "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights(filename_prefix+".h5")
+    print("Saved model to disk")
+    
+def load_model(filename_prefix):
+    # load json and create model
+    json_file = open(filename_prefix+".json", 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights(filename_prefix+".h5")
+    print("Loaded model from disk")
+    return loaded_model
 
 def cnn_model(train_X):
     print("CNN data shape: ", train_X.shape)
-    n_filters = 500
+    n_filters = 50
     filter_width = 20
     filter_height = 1
     
@@ -165,16 +204,32 @@ def rnn_model(train_X):
     model.compile(loss='mean_absolute_percentage_error', optimizer='adam',metrics=['accuracy'])
     return model
     
-def run_model(run_model, features, labels, threshold,split_kfold=6):   
+def run_model(run_model, features, labels, threshold,split_kfold=6,save=True,model_filename_prefix='last_trained_net'):   
     rand_state = 42 #For reproducability        
-    estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=10, batch_size=5, verbose=1)
-    kfold = KFold(n_splits=split_kfold, shuffle=True, random_state=rand_state)
-    results = cross_val_score(estimator, features, labels, cv=kfold)
+    if save:
+        estimator = KerasRegressor(build_fn=lambda: run_model(features), epochs=2, batch_size=5, verbose=1)
+        kfold = KFold(n_splits=split_kfold, shuffle=True, random_state=rand_state)
+        results = cross_val_score(estimator, features, labels, cv=kfold)
+        #save_model(model_filename_prefix,estimator.model)
+    else:
+        loaded_model = load_model(model_filename_prefix)
+        loaded_model.compile(loss='mean_absolute_percentage_error', optimizer='adam',metrics=['accuracy'])
+        results = loaded_model.evaluate(features, labels, verbose=0)
+        
+    estimator.fit(features,labels)
+    prediction = estimator.predict(features)
+    plt.plot(labels)
+    plt.plot(prediction)
+    plt.legend(['actual','prediction'],loc='upper left')
+    plt.show()
+    save_model(model_filename_prefix,estimator.model)
+    
     return results
 
 def main():
-    filename = "train_sub2.mat"
+    filename = "train_sub2.mat" #not on github, file is 250mb, created by ziao
     csv_filename = "raw_subject2.csv"
+    model_file_prefix = "trained_net"
     thresh = 6.6889
     selected_model = cnn_model
     lookback_elements = 50
@@ -183,8 +238,8 @@ def main():
     split_kfold = 4
     
     (features, labels) = load_csv(csv_filename, selected_model, lookback_elements, future_element, stride=stride)
-    
-    results = run_model(selected_model, features, labels, thresh,split_kfold=split_kfold)
+    #(features, labels) = load_mat(filename, selected_model)
+    results = run_model(selected_model, features, labels, thresh,split_kfold=split_kfold,save=True,model_filename_prefix=model_file_prefix)
     
     print(str.format("Results: mean:%.2f%% std(%.2f%%)" % (results.mean(), results.std())))
     
